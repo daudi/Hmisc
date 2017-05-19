@@ -1,5 +1,3 @@
-## $Id$
-		
 if(!exists("NROW", mode='function')) {
   NROW <- function(x)
     if (is.array(x) || is.data.frame(x)) nrow(x) else length(x)
@@ -28,14 +26,14 @@ prn <- function(x, txt, file='')
   invisible()
 }
 
-format.sep <- function(x, digits, ...)
+formatSep <- function(x, digits, ...)
 {
   y <- character(length(x))
   for(i in 1:length(x))
     y[i] <- if(missing(digits)) format(x[i], ...)
-            else format(x[i],digits=digits, ...)  ## 17Apr02
+            else format(x[i],digits=digits, ...)
 
-  names(y) <- names(x)  ## 17Apr02
+  names(y) <- names(x)
   y
 }
 
@@ -144,16 +142,14 @@ setParNro <- function(pars)
   invisible(par(pars[i]))
 }
 
-mgp.axis.labels <- function(value,type=c('xy','x','y','x and y'))
+mgp.axis.labels <- function(value, type=c('xy','x','y','x and y'))
 {
   type <- match.arg(type)
   if(missing(value)) {
     value <- .Options$mgp.axis.labels
-    pr <- par(c('mgp','las'))
+    pr <- par(c('mgp', 'las'))
     mgp <- pr$mgp
-    if(!length(value))
-      value <- c(.7, .7)
-    ##value <- c(mgp[2], if(pr$las==1) max(mgp[2],1.3) else mgp[2])
+    if(! length(value)) value <- c(.7, .7)
     return(switch(type, 
                   xy = value, 
                   x = c(mgp[1], value[1], mgp[3]),
@@ -173,30 +169,31 @@ mgp.axis.labels <- function(value,type=c('xy','x','y','x and y'))
 mgp.axis <-
   function(side, at=NULL, ...,
            mgp=mgp.axis.labels(type=if(side==1 | side==3)'x' else 'y'),
-           axistitle=NULL)
+           axistitle=NULL, cex.axis=par('cex.axis'), cex.lab=par('cex.lab'))
 {
   ## Version of axis() that uses appropriate mgp from mgp.axis.labels and
   ## gets around bug in axis(2, ...) that causes it to assume las=1
   mfrow <- par('mfrow')
+  tcl   <- max(par('tcl'), -0.4)
   nr <- mfrow[1]; nc <- mfrow[2]
   w <- list(side=side)
   w <- c(w, list(...))
-  if(length(at))
-    w$at <- at
-  if(side==1 || side==3) {
-    w$mgp <- mgp/nr
-    w$tcl <- -0.4/nr
+  w$cex.axis <- cex.axis
+  if(length(at)) w$at <- at
+  if(side == 1 || side == 3) {
+    w$mgp <- mgp / nr
+    w$tcl <- tcl / nr
     if(side==1 && length(axistitle))
-      title(xlab=axistitle, mgp = mgp / min(2.25, nr))
+      title(xlab=axistitle, mgp = mgp / min(2.25, nr), cex.lab=cex.lab)
   } else {
-    w$mgp <- mgp/nc
-    w$tcl <- -0.4/nc
+    w$mgp <- mgp / nc
+    w$tcl <- tcl / nc
     las <- par('las')
-    w$srt <- 90*(las==0)
-    w$adj <- if(las==0)0.5
+    w$srt <- 90 * (las == 0)
+    w$adj <- if(las == 0) 0.5
     else 1
-    if(side==2 && length(axistitle))
-      title(ylab=axistitle, mgp=mgp/min(2.25,nc))
+    if(side == 2 && length(axistitle))
+      title(ylab=axistitle, mgp=mgp / min(2.25, nc), cex.lab=cex.lab)
   }
   do.call('axis', w)
   invisible()
@@ -244,13 +241,11 @@ all.is.numeric <- function(x, what=c('test','vector'),
                            extras=c('.','NA'))
 {
   what <- match.arg(what)
-  old <- options(warn=-1)
-  on.exit(options(old))
-  ##.Options$warn <- -1  6Aug00
   x <- sub('[[:space:]]+$', '', x)
   x <- sub('^[[:space:]]+', '', x)
   xs <- x[x %nin% c('',extras)]
-  isnum <- !any(is.na(as.numeric(xs)))
+  if(! length(xs)) return(if(what == 'test') FALSE else x)
+  isnum <- suppressWarnings(!any(is.na(as.numeric(xs))))
   if(what=='test')
     isnum
   else if(isnum)
@@ -803,7 +798,6 @@ parGrid <- function(grid=FALSE)
 }
 
 ## Replaces R's xinch, yinch, extending them to grid
-## Defines these for S-Plus
 ## These convert inches to data units
 xInch <- function(x=1, warn.log=!grid, grid=FALSE)
 {
@@ -869,18 +863,17 @@ whichClosest <- function(x, w)
   ## w: vector of values for which to lookup closest matches in x
   ## Returns: subscripts in x corresponding to w
   ## Assumes no NAs in x or w
-  .Fortran("wclosest",as.double(w),as.double(x),
+  .Fortran(F_wclosest,as.double(w),as.double(x),
            length(w),length(x),
-           j=integer(length(w)),PACKAGE="Hmisc")$j
+           j=integer(length(w)))$j
 }
 
 whichClosePW <- function(x, w, f=0.2) {
   lx <- length(x)
   lw <- length(w)
-  .Fortran("wclosepw",as.double(w),as.double(x),
+  .Fortran(F_wclosepw,as.double(w),as.double(x),
            as.double(runif(lw)),as.double(f),
-           lw, lx, double(lx), j=integer(lw),
-           PACKAGE="Hmisc")$j
+           lw, lx, double(lx), j=integer(lw))$j
 }              
 
 whichClosek <- function(x, w, k) {
@@ -999,13 +992,13 @@ inverseFunction <- function(x, y) {
     turns[j] <- approxExtrap(d[l], xd[l], xout=0, na.rm=TRUE)$y
   }
 
-  h <- function(y, xx, yy, turns, xrange, yrange, what, coef) {
+  hh <- function(y, xx, yy, turns, xrange, yrange, what, coef) {
     what <- match.arg(what)
     ## Find number of monotonic intervals containing a given y value
     ylo <- pmin(yrange[,1],yrange[,2])
     yhi <- pmax(yrange[,1],yrange[,2])
-    n <- outer(y, ylo, function(a,b)a >= b) &
-         outer(y, yhi, function(a,b)a <= b)
+    n <- outer(y, ylo, function(a,b) a >= b) &
+         outer(y, yhi, function(a,b) a <= b)
     ## Columns of n indicate whether or not y interval applies
     ni <- nrow(yrange)
     fi <- matrix(NA, nrow=length(y), ncol=ni)
@@ -1031,11 +1024,11 @@ inverseFunction <- function(x, y) {
        if(length(z)==1) z else if(length(z)==0) NA else sample(z, size=1)
        }) else fi
   }
-  formals(h) <- list(y=numeric(0), xx=x, yy=y, turns=turns,
-                     xrange=xrange, yrange=yrange,
-                     what=c('all', 'sample'), coef=numeric(0))
+  formals(hh) <- list(y=numeric(0), xx=x, yy=y, turns=turns,
+                      xrange=xrange, yrange=yrange,
+                      what=c('all', 'sample'), coef=numeric(0))
   ## coef is there for compatibility with areg use
-  h
+  hh
 }
 
 Names2names <- function(x)
@@ -1117,8 +1110,8 @@ pasteFit <- function(x, sep=',', width=.Options$width)
   out
 }
 
-## Determine if variable is a date, time, or date/time variable in R
-## or S-Plus.  The following 2 functions are used by describe.vector
+## Determine if variable is a date, time, or date/time variable in R.
+## The following 2 functions are used by describe.vector
 ## timeUsed assumes is date/time combination variable and has no NAs
 testDateTime <- function(x, what=c('either','both','timeVaries'))
 {
@@ -1155,9 +1148,9 @@ formatDateTime <- function(x, at, roundDay=FALSE)
          fmt <- at$format
          if(roundDay) {
            if(length(fmt)==2 && is.character(fmt))
-             format(dates(x), fmt[1])
+             format(chron::dates(x), fmt[1])
            else
-             format(dates(x))
+             format(chron::dates(x))
          }
          else x
        } else {
@@ -1172,7 +1165,7 @@ formatDateTime <- function(x, at, roundDay=FALSE)
 
 getHdata <-
   function(file, what=c('data','contents','description','all'),
-           where='http://biostat.mc.vanderbilt.edu/twiki/pub/Main/DataSets')
+           where='http://biostat.mc.vanderbilt.edu/wiki/pub/Main/DataSets')
   {
     what <- match.arg(what)
     fn <- as.character(substitute(file))
@@ -1271,8 +1264,8 @@ if(weights)
 
   nq <- length(ps)
   ## Get all n leave-out-one quantile estimates
-  S <- matrix(.Fortran("jacklins", x, w, as.integer(n), as.integer(nq),
-                       res=double(n*nq), PACKAGE='Hmisc')$res, ncol=nq)
+  S <- matrix(.Fortran(F_jacklins, x, w, as.integer(n), as.integer(nq),
+                       res=double(n*nq))$res, ncol=nq)
 
   se <- l * sqrt(diag(var(S))/n)
 
@@ -1348,7 +1341,7 @@ Load <- function(object)
   load(file, .GlobalEnv)
 }
 
-Save <- function(object, name=deparse(substitute(object)))
+Save <- function(object, name=deparse(substitute(object)), compress=TRUE)
 {
   path <- .Options$LoadPath
   if(length(path))
@@ -1356,8 +1349,9 @@ Save <- function(object, name=deparse(substitute(object)))
   
   .FileName <- paste(path, name, '.rda', sep='')
   assign(name, object)
+  if(is.logical(compress) && compress) compress <- 'gzip'
   eval(parse(text=paste('save(', name, ', file="',
-                        .FileName, '", compress=TRUE)', sep='')))
+                        .FileName, '", compress="', compress, '")', sep='')))
 }
 
 getZip <- function(url, password=NULL) {
@@ -1367,12 +1361,12 @@ getZip <- function(url, password=NULL) {
   ## Password is 'foo'
   ## url may also be a local file
   ## Note: to make password-protected zip file z.zip, do zip -e z myfile
-  if(toupper(substring(url, 1, 7)) == 'HTTP://') {
+  if(grepl("^https?://", tolower(url))) {
     f <- tempfile()
     download.file(url, f)
   } else f <- url
   cmd <- if(length(password))
-    paste('unzip -p -P', password) else 'unzip -p'
+           paste('unzip -p -P', password) else 'unzip -p'
   pipe(paste(cmd, f))
 }
 
@@ -1491,7 +1485,7 @@ makeSteps <- function(x, y)
   else list(x = x[c(1, 2, 2)], y = y[c(1, 1, 2)])
 }
 
-latexBuild <- function(..., afterEndtabular=NULL, beforeEndtable=NULL, sep='') {
+latexBuild <- function(..., insert=NULL, sep='') {
   w <- list(...)
   l <- length(w)
   if(l %% 2 != 0) stop('# arguments must be multiple of 2')
@@ -1510,18 +1504,314 @@ latexBuild <- function(..., afterEndtabular=NULL, beforeEndtable=NULL, sep='') {
   w <- character(0)
   close <- if(length(op)) {
     for(y in rev(op)) {
-      if(length(beforeEndtable) && y == 'table')
-        w <- c(w, '\n\n', beforeEndtable)
+      if(length(insert))
+        for(ins in insert)
+          if(length(ins) &&
+             ins[[1]] == y && ins[[2]] == 'before')
+            w <- c(w, '\n', ins[[3]])
       w <- c(w,
              if(y == '(') ')'
              else if(y == '{') '}'
              else if(y == '[') ']'
              else sprintf('\\end{%s}', y))
-      if(length(afterEndtabular) && y == 'tabular')
-        w <- c(w, '\n\n', afterEndtabular)
+      if(length(insert))
+        for(ins in insert)
+          if(length(ins) &&
+             ins[[1]] == y && ins[[2]] == 'after')
+            w <- c(w, '\n', ins[[3]])
     }
     paste(w, collapse=sep)
   }
   structure(txt, close=close)
 }
 
+getRs <- function(file=NULL,
+                  guser='harrelfe', grepo='rscripts',
+                  gdir='raw/master', dir=NULL,
+                  browse=c('local', 'browser'), cats=FALSE,
+                  put=c('rstudio', 'source')) {
+  
+  browse <- match.arg(browse)
+  put    <- match.arg(put)
+  where  <- paste('https://github.com', guser, grepo, gdir, sep='/')
+  if(length(dir)) where <- paste(where, dir, sep='/')
+  
+  trim <- function(x) sub('^[[:space:]]+','',sub('[[:space:]]+$','', x))
+
+  pc <- function(s) {
+    wr <- function(x) {
+      n <- length(x)
+      z <- character(n)
+      for(i in 1 : n) z[i] <- paste(strwrap(x[i], width=15), collapse='\n')
+      z
+    }
+    s <- with(s, cbind(Major = wr(Major),
+                       Minor = wr(Minor),
+                       File  = wr(File),
+                       Type  = wr(Type),
+                       Description = wr(Description)))
+    print.char.matrix(s, col.names=TRUE)
+  }
+
+  read.table.HTTPS <- function(url) {
+    res <- tryCatch(read.table(url,
+                               sep='|', quote='', header=TRUE, as.is=TRUE), 
+                    error=function(e) e)
+    if(inherits(res, "simpleError")) {
+      if(res$message == "https:// URLs are not supported") {
+        res$message <- paste(res$message, "Try installing R version >= 3.2.0", sep="\n\n")
+      }
+      stop(res)
+    }
+    res
+  }
+
+  download.file.HTTPS <- function(url, file, method='libcurl', 
+                                  quiet=TRUE, extra='--no-check-certificate') {
+    res <- tryCatch(download.file(url, file, method, quiet=quiet, extra=extra), 
+                    error=function(e) e)
+    if(inherits(res, "simpleError")) {
+      if(res$message == "download.file(method = \"libcurl\") is not supported on this platform") {
+        warning(paste(res$message, "Try installing R version >= 3.2.0", "Attempting method=\"wget\"", sep="\n\n"))
+        return(download.file.HTTPS(url, file, method='wget'))
+      }
+      if(res$message == "https:// URLs are not supported") {
+        res$message <- paste(res$message, "Try installing R version >= 3.2.0", sep="\n\n")
+      }
+      stop(res)
+    }
+    invisible(res)
+  }
+  
+  if(! length(file)) {
+    s <- read.table.HTTPS(paste(where, 'contents.md', sep='/'))
+    s <- s[-1,]
+    names(s) <- c('Major', 'Minor', 'File', 'Type', 'Description')
+    sd <- s; n <- nrow(s)   # sd = s with dittoed items duplicated
+    for(x in c('Major', 'Minor')) {
+      u <- v <- gsub('\\*\\*', '', trim(s[[x]]))
+      for(i in 2 : n) if(u[i] == '"') u[i] <- u[i - 1]
+      v <- gsub('"', '', v)
+      s[[x]] <- v; sd[[x]] <- u
+    }
+    s$File        <- trim(gsub('\\[(.*)\\].*', '\\1', s$File))
+    d <- trim(gsub('\\[.*\\]\\(.*\\)', '', s$Description))
+    s$Description <- gsub('\\[report\\].*', '', d)
+
+    if(is.logical(cats)) {
+      if(cats) {
+        ## List all major and minor categories
+        maj <- sort(unique(sd$Major))
+        min <- setdiff(sort(unique(sd$Minor)), '')
+        cat('\nMajor categories:\n', maj,
+            '\nMinor categories:\n', min, '', sep='\n')
+        return(invisible(list(Major=maj, Minor=min)))
+      }
+    } else {  ## list all scripts whose "first hit" major category contains cats
+        i <- grepl(tolower(cats), tolower(sd$Major))
+        if(! any(i)) cat('No scripts with', cats, 'in major category\n')
+        else pc(s[i, ])
+        return(invisible(s[i, ]))
+      }
+    if(browse == 'local') pc(s)
+    else
+      browseURL('https://github.com/harrelfe/rscripts/blob/master/contents.md')
+    return(invisible(s))
+  }
+
+  if(put == 'source')
+    return(invisible(source(paste(where, file, sep='/'))))
+    
+  download.file.HTTPS(paste(where, file, sep='/'), file)
+  os <- Sys.info()['sysname']
+  windowsRstudio <- function() {    # Written by Cole Beck
+    RSTUDIO_BIN <- file.path('C:','Program Files','RStudio','bin','rstudio.exe')
+    if(file.access(RSTUDIO_BIN, mode=1) == -1) {
+      opts <- system("where /r c: rstudio.exe", TRUE)
+      for(i in seq_along(opts)) {
+        RSTUDIO_BIN <- opts[i]
+        if(file.access(RSTUDIO_BIN, mode=1) == 0) return(RSTUDIO_BIN)
+      }
+      stop('rstudio cannot be found')
+    }
+    RSTUDIO_BIN
+  }
+  switch(os,
+         Linux   = system2('rstudio', file),
+         Windows = system2(windowsRstudio(), file),
+         system(paste('open -a rstudio', file)) )
+         ## assume everything else is Mac
+  invisible()
+}
+
+knitrSet <- function(basename=NULL, w=4, h=3,
+                     fig.path=if(length(basename)) basename else '',
+                     fig.align='center', fig.show='hold', fig.pos='htbp',
+                     fig.lp=paste('fig', basename, sep=':'),
+                     dev=switch(lang, latex='pdf', markdown='png'),
+                     tidy=FALSE, error=FALSE,
+                     messages=c('messages.txt', 'console'),
+                     width=61, decinline=5, size=NULL, cache=FALSE,
+                     echo=TRUE, results='markup', lang=c('latex','markdown')) {
+
+  if(! requireNamespace('knitr')) stop('knitr package not available')
+  messages <- match.arg(messages)
+  lang  <- match.arg(lang)
+  ## Specify e.g. dev=c('pdf','png') or dev=c('pdf','postscript')
+  ## to produce two graphics files for each plot
+  ## But: dev='CairoPNG' is preferred for png
+  if(length(basename)) basename <- paste(basename, '-', sep='')
+
+  ## Default width fills Sweavel boxes when font size is \small and svmono.cls
+  ## is in effect (use 65 without svmono)
+
+  if(lang == 'latex') knitr::render_listings()
+  if(messages != 'console') {
+	unlink(messages) # Start fresh with each run
+	hook_log = function(x, options) cat(x, file=messages, append=TRUE)
+	knitr::knit_hooks$set(warning = hook_log, message = hook_log)
+  }
+  else knitr::opts_chunk$set(message=FALSE, warning=FALSE)
+  if(length(size)) knitr::opts_chunk$set(size = size)
+  ## For htmlcap see http://stackoverflow.com/questions/15010732
+  ## Causes collisions in html and plotly output; Original (no better)
+  ## enclosed in <p class="caption"> ... </p>
+#  if(lang == 'markdown')
+#    knitr::knit_hooks$set(htmlcap = function(before, options, envir) {
+#      if(! before) options$htmlcap
+#        htmltools::HTML(paste0('<br><div style="font-size: 75%;">',
+#                               options$htmlcap, "</div><br>"))
+#    })
+  
+  if(length(decinline)) {
+    rnd <- function(x, dec) if(!is.numeric(x)) x else round(x, dec)
+    formals(rnd) <- list(x=NULL, dec=decinline)
+    knitr::knit_hooks$set(inline = rnd)
+  }
+
+  spar <- function(mar=if(!axes)
+                 c(2.25+bot-.45*multi,2*(las==1)+2+left,.5+top+.25*multi,
+                   .5+rt) else
+                 c(3.25+bot-.45*multi,2*(las==1)+3.5+left,.5+top+.25*multi,
+                   .5+rt),
+                 lwd = if(multi)1 else 1.75,
+                 mgp = if(!axes) mgp=c(.75, .1, 0) else
+                 if(multi) c(1.5, .365, 0) else c(2.4-.4, 0.475, 0),
+                 tcl = if(multi)-0.25 else -0.4, xpd=FALSE, las=1,
+                 bot=0, left=0, top=0, rt=0, ps=if(multi) 14 else 10,
+                 mfrow=NULL, axes=TRUE, cex.lab=1.15, cex.axis=.8,
+                 ...) {
+  multi <- length(mfrow) > 0
+  par(mar=mar, lwd=lwd, mgp=mgp, tcl=tcl, ps=ps, xpd=xpd,
+      cex.lab=cex.lab, cex.axis=cex.axis, las=las, ...)
+  if(multi) par(mfrow=mfrow)
+}
+
+  knitr::knit_hooks$set(par=function(before, options, envir)
+                 if(before && options$fig.show != 'none') {
+                   p <- c('bty','mfrow','ps','bot','top','left','rt','lwd',
+                          'mgp','las','tcl','axes','xpd')
+                   pars <- knitr::opts_current$get(p)
+                   pars <- pars[!is.na(names(pars))]
+                   ## knitr 1.6 started returning NULLs for unspecified pars
+                   i <- sapply(pars, function(x) length(x) > 0)
+                   if(any(i)) do.call('spar', pars[i]) else spar()
+                 })
+  knitr::opts_knit$set(
+    width=width)
+    #aliases=c(h='fig.height', w='fig.width', cap='fig.cap', scap='fig.scap'))
+    #eval.after = c('fig.cap','fig.scap'),
+    #error=error)  #, keep.source=keep.source (TRUE))
+  # See if need to remove dev=dev from below because of plotly graphics
+  knitr::opts_chunk$set(fig.path=fig.path, fig.align=fig.align,
+                        fig.width=w, fig.height=h,
+                 fig.show=fig.show, fig.lp=fig.lp, fig.pos=fig.pos,
+                 dev=dev, par=TRUE, tidy=tidy, out.width=NULL, cache=cache,
+                 echo=echo, error=error, comment='', results=results)
+  hook_chunk = knitr::knit_hooks$get('chunk')
+  ## centering will not allow too-wide figures to go into left margin
+  if(lang == 'latex') knitr::knit_hooks$set(chunk = function(x, options) { 
+    res = hook_chunk(x, options) 
+    if (options$fig.align != 'center') return(res) 
+    gsub('\\{\\\\centering (\\\\includegraphics.+)\n\n\\}', 
+         '\\\\centerline{\\1}', res) 
+  }) 
+  knitr::set_alias(w = 'fig.width', h = 'fig.height',
+                   cap = 'fig.cap', scap='fig.scap')
+}
+## see http://yihui.name/knitr/options#package_options
+
+## Use caption package options to control caption font size
+
+
+grType <- function() {
+	if('plotly' %nin% utils::installed.packages()[,1]) return('base')
+	if(length(g <- .Options$grType) && g == 'plotly') 'plotly' else 'base'
+}
+
+prType <- function() {
+  g <- .Options$prType
+  if(! length(g)) 'plain' else g
+  }
+
+
+## Save a plotly graphic with name foo.png where foo is the name of the
+## current chunk
+## http://stackoverflow.com/questions/33959635/exporting-png-files-from-plotly-in-r
+
+plotlySave <- function(x, ...) {
+  chunkname <- knitr::opts_current$get("label")
+  path      <- knitr::opts_chunk$get('fig.path')
+  if(is.list(x) & ! inherits(x, 'plotly_hash')) {
+    for(w in names(x)) {
+      file <- paste0(path, chunkname, '-', w, '.png')
+      plotly::plotly_IMAGE(x[[w]], format='png', out_file=file, ...)
+    }
+  }
+  else {
+    file <- paste0(path, chunkname, '.png')
+    plotly::plotly_IMAGE(x, format='png', out_file=file, ...)
+    }
+  invisible()
+}
+
+## Miscellaneous functions helpful for plotly specifications
+
+plotlyParm = list(
+  ## Needed height in pixels for a plotly dot chart given the number of
+  ## rows in the chart
+  heightDotchart = function(rows) min(800, max(200, 25 * rows)),
+
+  ## Colors for unordered categories
+  colUnorder = function(n=5, col=colorspace::rainbow_hcl) {
+    if(! is.function(col)) rep(col, length=n)
+    else col(n)
+  },
+
+  ## Colors for ordered levels
+  colOrdered = function(n=5, col=viridis::viridis) {
+    if(! is.function(col)) rep(col, length=n)
+    else col(n)
+  },
+
+  ## Margin to leave enough room for long labels on left or right as
+  ## in dotcharts
+  lrmargin = function(x, mult=7) {
+    if(is.character(x)) x <- max(nchar(x))
+    min(190, max(70, x * mult))
+    }
+ 
+  )
+
+## Function written by Dirk Eddelbuettel:
+tobase64image <- function (file, Rd = FALSE, alt = "image") {
+  input <- normalizePath(file, mustWork = TRUE)
+  buf <- readBin(input, raw(), file.info(input)$size)
+  base64 <- base64enc::base64encode(buf)
+  sprintf("%s<img src=\"data:image/png;base64,\n%s\" alt=\"%s\" />%s",
+          if (Rd)
+            "\\out{"
+          else "", base64, alt, if (Rd)
+                                  "}"
+                                else "")
+}

@@ -125,13 +125,13 @@
      xlab = if(what=='proportion') 'Proportion'
             else 'Percentage', 
      pch = c(16, 1, 2, 17, 15, 3, 4, 5, 0), exclude1 = TRUE,
-     dotfont = 1, main, subtitles = TRUE,
+     dotfont = 1, main,
      prtest = c('P', 'stat', 'df', 'name'), pdig = 3, eps = 0.001,
      conType = c('dot', 'bp', 'raw'), cex.means = 0.5, \dots)
 
 \method{latex}{summary.formula.reverse}(object, title = first.word(deparse(substitute(object))), digits,
       prn = any(n != N), pctdig = 0, what=c('\%', 'proportion'),
-      npct = c("numerator", "both", "denominator", "none"),
+      npct = c("numerator", "both", "denominator", "slash", "none"),
       npct.size = 'scriptsize', Nsize = "scriptsize", exclude1 = TRUE,
       vnames=c("labels", "names"), prUnits = TRUE, middle.bold = FALSE,
       outer.size = "scriptsize", caption, rowlabel = "",
@@ -303,7 +303,8 @@ ordTestpo(group, x)
     variable) that returns a list with components \code{P} (the computed
     P-value), \code{stat} (the test statistic, either chi-square or F),
     \code{df} (degrees of freedom), \code{testname} (test name), \code{statname}
-    (statistic name), an optional component \code{latexstat} (LaTeX
+    (statistic name), \code{namefun} (\code{"chisq", "fstat"}), an
+    optional component \code{latexstat} (LaTeX 
     representation of \code{statname}), an optional component
     \code{plotmathstat} (for R - the \code{plotmath} representation of
     \code{statname}, as a character string),  and an
@@ -417,7 +418,8 @@ ordTestpo(group, x)
     specifies which counts are to be printed to the right of percentages.
     The default is to print the frequency (numerator of the percent) in
     parentheses.  You can specify \code{"both"} to print both numerator and
-    denominator, \code{"denominator"}, or \code{"none"}.
+    denominator, \code{"denominator"}, \code{"slash"} to
+		typeset horizontally using a forward slash, or \code{"none"}.
   }
   \item{npct.size}{
     the size for typesetting \code{npct} information which appears after percents.
@@ -496,9 +498,9 @@ ordTestpo(group, x)
   }
   \item{which}{
     For \code{method="response"} specifies the sequential number or a vector of
-    subscripts of response variables to plot.  If you had any \code{stratify}
-    variables, these are counted as if multiple response variables were
-    analyzed.  For \code{method="reverse"} specifies whether to plot results
+    subscripts of statistics to plot.  If you had any \code{stratify}
+    variables, these are counted as if more statistics were computed.
+  For \code{method="reverse"} specifies whether to plot results 
     for categorical variables, continuous variables, or both (the default).
   }
   \item{conType}{

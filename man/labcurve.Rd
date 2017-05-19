@@ -6,9 +6,7 @@
 \alias{drawPlot}
 \alias{plot.drawPlot}
 \alias{bezier}
-\title{
-Label Curves, Make Keys, and Interactively Draw Points and Curves
-}
+\title{Label Curves, Make Keys, and Interactively Draw Points and Curves}
 \description{
 \code{labcurve} optionally draws a set of curves then labels the curves.
 A variety of methods for drawing labels are implemented, ranging from
@@ -75,8 +73,8 @@ enough to hold the key, and draws the key using \code{putKey}.
 lines, step functions, polynomials, Bezier curves, and points, and
 automatically labeling the point groups using \code{labcurve} or
 \code{putKeyEmpty}.  When \code{drawPlot} is invoked it creates
-temporary functions \code{Points}, \code{Curve}, and \code{Abline} in
-the session frame (frame zero).  The user calls these functions inside
+temporary functions \code{Points}, \code{Curve}, and \code{Abline}.
+The user calls these functions inside
 the call to \code{drawPlot} to define groups of points in the order they
 are defined with the mouse.  \code{Abline} is used to call \code{abline}
 and not actually great a group of points. For some curve types, the
@@ -131,12 +129,12 @@ drawPlot(\dots, xlim=c(0,1), ylim=c(0,1), xlab='', ylab='',
          key=FALSE, opts=NULL)
 
 # Points(label=' ', type=c('p','r'),
-#        n, pch=pch.to.use[1], cex=par('cex'),
+#        n, pch=pch.to.use[1], cex=par('cex'), col=par('col'),
 #        rug = c('none','x','y','xy'), ymean)
 
 # Curve(label=' ',
-#       type=c('bezier','polygon','linear','pol','step','gauss'),
-#       n=NULL, lty=1, lwd=par('lwd'), degree=2,
+#       type=c('bezier','polygon','linear','pol','loess','step','gauss'),
+#       n=NULL, lty=1, lwd=par('lwd'), col=par('col'), degree=2,
 #      evaluation=100, ask=FALSE)
 
 # Abline(\dots)
@@ -257,7 +255,8 @@ represent a non-1-to-1 function such as a circle), \code{"polygon"} for
 orginary line segments, \code{"linear"} for a straight line defined by two
 endpoints, \code{"pol"} for a \code{degree}-degree polynomial to be fitted to
 the mouse-clicked points, \code{"step"} for a left-step-function, \code{"gauss"}
-to plot a Gaussian density fitted to 3 clicked points, or a function
+to plot a Gaussian density fitted to 3 clicked points, \code{"loess"} to
+use the \code{lowess} function to smooth the clicked points, or a function
 to draw a user-specified function, evaluated at \code{evaluation} points
 spanning the whole x-axis.  For the density the user must click in the
 left tail, at the highest value (at the mean), and in the right tail,
@@ -287,7 +286,9 @@ range for current plot (\code{par("usr")[1:2]}).  For
 rectanges, but it has the same default as above. For
 \code{pl=TRUE,add=FALSE} you may want to extend \code{xlim} somewhat to
 allow large keys to fit, when using \code{keyloc="auto"}.  For
-\code{drawPlot} default is \code{c(0,1)}.
+\code{drawPlot} default is \code{c(0,1)}.  When using
+\code{largest.empty} with \code{ggplot2}, \code{xlim} and \code{ylim}
+are mandatory.
 }
 \item{tilt}{
 set to \code{TRUE} to tilt labels to follow the curves, for \code{method="offset"}
@@ -380,7 +381,7 @@ drawn, under the control of \code{type},\code{lty},\code{lwd},\code{col} paramet
 either in the \code{curves} lists or in the separate arguments given to
 \code{labcurve} or through \code{opts}.
 For \code{largest.empty}, set \code{pl=TRUE} to show the rectangle the function 
-found by drawing it with a solid color.
+found by drawing it with a solid color.  May not be used under \code{ggplot2}.
 }
 \item{add}{
 By default, when curves are actually drawn by \code{labcurve} a new plot is
@@ -634,8 +635,6 @@ plot(d, key=FALSE)  # label groups using labcurve
 \keyword{aplot}
 \keyword{dplot}
 \keyword{iplot}
-% Converted by Sd2Rd version 1.21.
-
 
 
 

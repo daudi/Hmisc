@@ -17,7 +17,8 @@ format.df(x, digits, dec=NULL, rdec=NULL, cdec=NULL,
           numeric.dollar=!dcolumn, na.blank=FALSE, na.dot=FALSE,
           blank.dot=FALSE, col.just=NULL, cdot=FALSE,
           dcolumn=FALSE, matrix.sep=' ', scientific=c(-4,4),
-          math.row.names=FALSE, math.col.names=FALSE,
+          math.row.names=FALSE, already.math.row.names=FALSE,
+          math.col.names=FALSE, already.math.col.names=FALSE,
           double.slash=FALSE, format.Date="\%m/\%d/\%Y",
           format.POSIXt="\%m/\%d/\%Y \%H:\%M:\%OS", \dots)
 }
@@ -69,8 +70,8 @@ format.df(x, digits, dec=NULL, rdec=NULL, cdec=NULL,
     contain decimal places.  When you use \code{dcolumn = TRUE}, 
     \code{numeric.dollar} is set by default to \code{FALSE}.  When you
     use \code{dcolumn = TRUE}, the
-    object attribute \code{"style"} set to \samp{dcolumn} as the \code{latex} \preformatted{\\usepackage}
-    must reference \preformatted{[dcolumn]}.
+    object attribute \code{"style"} set to \samp{dcolumn} as the
+		\code{latex} \code{usepackage} must reference \code{[dcolumn]}.
     The three files \file{dcolumn.sty}, \file{newarray.sty}, and
     \file{array.sty} will 
     need to be in a directory in your \env{TEXINPUTS} path.
@@ -86,9 +87,13 @@ format.df(x, digits, dec=NULL, rdec=NULL, cdec=NULL,
   \item{math.row.names}{
     logical, set true to place dollar signs around the row names.
   }
+	\item{already.math.row.names}{set to \code{TRUE} to prevent any math
+		mode changes to row names}
   \item{math.col.names}{
     logical, set true to place dollar signs around the column names.
   }
+	\item{already.math.col.names}{set to \code{TRUE} to prevent any math
+		mode changes to column names}
   \item{na.dot}{
     Set to \code{TRUE} to use periods rather than \code{NA} for missing
     numeric values. 
@@ -107,11 +112,14 @@ format.df(x, digits, dec=NULL, rdec=NULL, cdec=NULL,
     whose length is equal to the number of columns of the result matrix.
     When \code{format.df} is called by \code{latex.default}, the
     \code{col.just} is used as the \code{cols} argument to the
-    \preformatted{\\tabular} environment and the letters \samp{l}, \samp{r},
+    \code{tabular} environment and the letters \samp{l}, \samp{r},
     and \samp{c} are valid values.  When \code{format.df} is called by
     \acronym{SAS}, the \code{col.just} is used to determine whether a
     \samp{\$} is needed on the \samp{input} line of the \file{sysin} file,
-    and the letters \samp{l} and \samp{r} are valid values.
+    and the letters \samp{l} and \samp{r} are valid values.  You can
+		pass specifications other than \code{l,r,c} in \code{col.just},
+		e.g., \code{"p{3in}"} to get paragraph-formatted columns from
+		\code{latex()}. 
   }
   \item{matrix.sep}{
     When \code{x} is a data frame containing a matrix, so that new column names
@@ -134,8 +142,9 @@ format.df(x, digits, dec=NULL, rdec=NULL, cdec=NULL,
     String used to format objects of the POSIXt class.
   }
   \item{\dots}{
-    other arguments are accepted and ignored.  For \code{latexVerbatim} these
-    arguments are passed to the \code{print} function.
+    other arguments are accepted and passed to \code{format.default}.
+    For \code{latexVerbatim} these arguments are passed to the
+    \code{print} function.
   }
 }
 \value{
@@ -176,11 +185,11 @@ format.df(x, digits, dec=NULL, rdec=NULL, cdec=NULL,
 \examples{
 \dontrun{
 x <- data.frame(a=1:2, b=3:4)
-x$m <- matrix(5:8,nrow=2)
+x$m <- 10000*matrix(5:8,nrow=2)
 names(x)
 dim(x)
 x
-format.df(x)
+format.df(x, big.mark=",")
 dim(format.df(x))
 }
 }

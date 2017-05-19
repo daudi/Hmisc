@@ -51,11 +51,10 @@ rcorrp.cens <- function(x1, x2, S, outx=FALSE, method=1)
   storage.mode(outx)   <- "logical"
 
   z <-
-      .Fortran("cidxcp",x1,x2,y,event,length(x1),method,outx,
+      .Fortran(F_cidxcp,x1,x2,y,event,length(x1),method,outx,
                nrel=double(1),nuncert=double(1),
                c1=double(1),c2=double(1),gamma1=double(1),gamma2=double(1),
-               gamma=double(1),sd=double(1),c12=double(1),c21=double(1),
-               PACKAGE="Hmisc")
+               gamma=double(1),sd=double(1),c12=double(1),c21=double(1))
   
   r <- c(z$gamma,z$sd,z$c12,z$c21,n,nmiss,ne,z$nrel,z$nuncert,z$c1,z$c2,
          z$gamma1,z$gamma2)
@@ -148,7 +147,7 @@ print.improveProb <- function(x, digits=3, conf.int=.95,  ...)
     zpci <- function(m, se, conf.int)
       {
         z <- qnorm((1+conf.int)/2)
-        cbind(m/se, (1 - pnorm(abs(m/se)))*2, m - z*se, m + z*se)
+        cbind(m/se, 2 * pnorm(- abs(m/se)), m - z*se, m + z*se)
       }
 
     p <- cbind(c(x$nri, x$nri.ev, x$nri.ne),

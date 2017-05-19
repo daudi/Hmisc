@@ -2,7 +2,7 @@
 transace <- function(x, monotonic=NULL, categorical=NULL, binary=NULL,
                      pl=TRUE)
 {
-  require(acepack)  # provides ace, avas
+  ## require(acepack)  # provides ace, avas
 
   nam <- dimnames(x)[[2]]
   omit <- is.na(x %*% rep(1,ncol(x)))
@@ -39,7 +39,7 @@ transace <- function(x, monotonic=NULL, categorical=NULL, binary=NULL,
     xt[,i] <- a$ty
     rsq[i] <- a$rsq
     if(pl)
-      plot(x[,i], xt[,i], xlab=nam[i], ylab=paste("Transformed",nam[i]))
+      plot(x[,i], xt[,i], xlab=nam[i], ylab='')
   }
 
   cat("R-squared achieved in predicting each variable:\n\n")
@@ -58,7 +58,7 @@ areg.boot <- function(x, data, weights, subset, na.action=na.delete,
 {
   acall   <- match.call()
   method  <- match.arg(method)
-  if(method=='avas') require(acepack)
+  ## if(method=='avas') require(acepack)
 
   if(!inherits(x,'formula')) stop('first argument must be a formula')
 
@@ -417,7 +417,7 @@ summary.areg.boot <- function(object, conf.int=.95, values, adj.to,
                c(NA, diff.pred-zcrit*sediff),
                c(NA, diff.pred+zcrit*sediff),
                c(NA, diff.pred/sediff),
-               c(NA, 2*(1-pnorm(abs(diff.pred/sediff)))))
+               c(NA, 2 * pnorm(- abs(diff.pred/sediff))))
     cl <- object$cat.levels[[namj]]
     dimnames(r) <- list(x=if(length(cl))cl
                           else format(xv),
@@ -482,7 +482,8 @@ plot.areg.boot <- function(x, ylim, boot=TRUE,
       else if(k<=16) c(4,4)
       else c(4,5)
 
-    oldmfrow <- par(mfrow=mf,err=-1)
+    oldmfrow <- par('mfrow', 'err')
+    par(mfrow=mf, err=-1)
     on.exit(par(oldmfrow))
   }
 

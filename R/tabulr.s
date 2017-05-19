@@ -4,12 +4,12 @@ tabulr <- function(formula, data=NULL, nolabel=NULL, nofill=NULL, ...) {
   else if(is.list(data)) data <- list2env(data, parent=environment(formula))
 
   ##  f <- as.character(deparse(formula))
-  lab <- function(x, hfill=TRUE) {
+  # lab <- function(x, hfill=TRUE) {
     ## x <- gsub('^ +', '', x)
     ## x <- gsub(' +$', '', x)
-    l <- labelLatex(get(x, envir=data), default=x, double=TRUE, hfill=hfill)
-    paste("Heading('", l, "')*", x, sep='')
-  }
+  #   l <- labelLatex(get(x, envir=data), default=x, double=TRUE, hfill=hfill)
+  #   paste("Heading('", l, "')*", x, sep='')
+  # }
   lab <- function(x) {
     x <- deparse(x)
     if(x == 'trio') return('table_trio')
@@ -52,13 +52,13 @@ tabulr <- function(formula, data=NULL, nolabel=NULL, nofill=NULL, ...) {
 
   f <- ff(formula, lab)
   f <- as.formula(gsub("`", "", as.character(deparse(f))))
-  result <- tabular(f, data=data, ...)
+  result <- tables::tabular(f, data=data, ...)
   attr(result, 'originalformula') <- formula
   result
 }
 
 table_trio <- function(x) {
-  o <- table_options()
+  o <- tables::table_options()
   s <- function(x, default) if(length(x)) x else default
   left     <- s(o$left,  3)
   right    <- s(o$right, 1)
@@ -89,11 +89,11 @@ table_trio <- function(x) {
 
 table_N <- function(x) paste('{\\smaller $n=', length(x), '$}', sep='')
 
-nFm <- function(x, left, right, neg=FALSE, pad=FALSE) {
+nFm <- function(x, left, right, neg=FALSE, pad=FALSE, html=FALSE) {
   tot <- if(right == 0) left + neg else left + right + neg + 1
   fmt <- paste('%', tot, '.', right, 'f', sep='')
   x <- sprintf(fmt, x)
-  if(pad) x <- gsub(' ', '~', x)
+  if(pad) x <- gsub(' ', if(html) '' else '~', x)
   x
 }
 
@@ -101,7 +101,7 @@ table_freq <- function(x) {
   if(!length(x) || all(is.na(x))) return('')
   w   <- table(x)
   den <- sum(w)
-  to <- table_options()
+  to <- tables::table_options()
   showfreq <- to$showfreq
   if(!length(showfreq)) showfreq <- 'all'
   pctdec <- to$pctdec
@@ -137,7 +137,7 @@ table_pc <- function(x, y) {
 
 table_formatpct <- function(num, den) {
   if(den == 0 | all(is.na(num + den))) return('')
-  to     <- table_options()
+  to     <- tables::table_options()
   npct   <- to$npct
   pctdec <- to$pctdec
   if(!length(pctdec)) pctdec <- 0

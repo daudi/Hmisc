@@ -22,7 +22,8 @@
   \code{upData} is a function facilitating the updating of a data frame
   without attaching it in search position one.  New variables can be
   added, old variables can be modified, variables can be removed or renamed, and
-  \code{"labels"} and \code{"units"} attributes can be provided.  Various checks
+  \code{"labels"} and \code{"units"} attributes can be provided.
+  Observations can be subsetted.  Various checks
   are made for errors and inconsistencies, with warnings issued to help
   the user.  Levels of factor variables can be replaced, especially
   using the \code{list} notation of the standard \code{merge.levels}
@@ -30,11 +31,16 @@
   \code{upData} also converts double precision vectors to integer if no
   fractional values are present in 
   a vector.  \code{upData} is also used to process R workspace objects
-  created by StatTransfer, which puts variable labels as an attribute on
-  the data frame rather than on each variable. If such an attribute is
-  present, it is used to define all the labels before any label changes
+  created by StatTransfer, which puts variable and value labels as attributes on
+  the data frame rather than on each variable. If such attributes are
+  present, they are used to define all the labels and value labels
+  (through conversion to factor variables) before any label changes
   take place, and \code{force.single} is set to a default of
   \code{FALSE}, as StatTransfer already does conversion to integer.
+
+	Variables having labels but not classed \code{"labelled"} (e.g., data
+	imported using the \code{haven} package) have that class added to them
+	by \code{upData}.
 
   The \code{dataframeReduce} function removes variables from a data frame
   that are problematic for certain analyses.  Variables can be removed
@@ -52,9 +58,9 @@ cleanup.import(obj, labels, lowernames=FALSE,
                fixdates=c('none','year'), charfactor=FALSE)
 
 upData(object, \dots, 
-       rename, drop, keep, labels, units, levels, force.single=TRUE,
+       subset, rename, drop, keep, labels, units, levels, force.single=TRUE,
        lowernames=FALSE, caplabels=FALSE, moveUnits=FALSE,
-       charfactor=FALSE, print=TRUE)
+       charfactor=FALSE, print=TRUE, html=FALSE)
 
 dataframeReduce(data, fracmiss=1, maxlevels=NULL,  minprev=0, print=TRUE)
 }
@@ -84,8 +90,8 @@ dataframeReduce(data, fracmiss=1, maxlevels=NULL,  minprev=0, print=TRUE)
     a character vector the same length as the number of variables in
     \code{obj}.  These character values are taken to be variable labels in the
     same order of variables in \code{obj}.
-    For \code{upData}, \code{labels} is a named list or named vector with variables
-    in no specific order.
+    For \code{upData}, \code{labels} is a named list or named vector
+		with variables in no specific order.
   }
   \item{lowernames}{
     set this to \code{TRUE} to change variable names to lower case.
@@ -142,6 +148,10 @@ dataframeReduce(data, fracmiss=1, maxlevels=NULL,  minprev=0, print=TRUE)
     for \code{upData}, one or more expressions of the form
     \code{variable=expression}, to derive new variables or change old ones.
   }
+	\item{subset}{an expression that evaluates to a logical vector
+		specifying which rows of \code{object} should be retained.  The
+		expressions should use the original variable names, i.e., before any
+	variables are renamed but after \code{lowernames} takes effect.}
   \item{rename}{
     list or named vector specifying old and new names for variables.  Variables are
     renamed before any other operations are done.  For example, to rename
@@ -170,8 +180,11 @@ dataframeReduce(data, fracmiss=1, maxlevels=NULL,  minprev=0, print=TRUE)
     set to \code{TRUE} to look for units of measurements in variable
     labels and move them to a \code{"units"} attribute.  If an expression
     in a label is enclosed in parentheses or brackets it is assumed to be
-    units if \code{moveUnits=TRUE}.
-  }
+    units if \code{moveUnits=TRUE}.}
+  \item{html}{set to \code{TRUE} to print conversion information as html
+		vertabim at 0.6 size.  The user will need to put
+		\code{results='asis'} in a \code{knitr} chunk header to properly
+		render this output.}
   \item{fracmiss}{the maximum permissable proportion of \code{NA}s for a
     variable to be kept.  Default is to keep all variables no matter how
     many \code{NA}s are present.}
@@ -208,6 +221,7 @@ dat2
 describe(dat2)
 dat <- dat2    # copy to original name and delete dat2 if OK
 rm(dat2)
+dat3 <- upData(dat, X=X^2, subset = x < (3/7)^2 - 5, rename=c(x='X'))
 
 # Remove hard to analyze variables from a redundancy analysis of all
 # variables in the data frame

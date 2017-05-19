@@ -1,5 +1,4 @@
-## $Id$
-## -*-S-*- Improvements due to Martin Maechler <maechler@stat.math.ethz.ch>
+## Improvements due to Martin Maechler <maechler@stat.math.ethz.ch>
 
 scat1d <- function(x, side=3, frac=.02, jitfrac=.008, tfrac, 
                    eps=ifelse(preserve,0,.001),
@@ -14,11 +13,11 @@ scat1d <- function(x, side=3, frac=.02, jitfrac=.008, tfrac,
   if(length(x) >= nhistSpike)
     return(histSpike(x, side=side, type=type,
                      frac=2.5 * frac, col=col, y=y, curve=curve,
-                     bottom.align=if(type=='density') TRUE else bottom.align, 
+                     bottom.align=if(type == 'density') TRUE else bottom.align, 
                      add=TRUE, nint=nint, grid=grid, ...))
 
   gfun <- ordGridFun(grid)
-  if(side==1 || side==3 || length(y) || length(curve)) {
+  if(side == 1 || side == 3 || length(y) || length(curve)) {
     l <- 1:2
     ax <- 1
   } else {
@@ -53,7 +52,7 @@ scat1d <- function(x, side=3, frac=.02, jitfrac=.008, tfrac,
     stop("must have  0 <= tfrac <= 1")
 
   ## Start JOA 19.8.97
-  if(jitfrac > 0 && any(duplicated( if(eps > 0) round(x / w / eps) else x )))
+  if(jitfrac > 0 && anyDuplicated( if(eps > 0) round(x / w / eps) else x ))
     if (preserve)
       x <- jitter2(x, fill=fill, limit=limit, eps=w * eps)
     else
@@ -83,7 +82,7 @@ scat1d <- function(x, side=3, frac=.02, jitfrac=.008, tfrac,
     a <- a + h2
     b <- b + h2
   }
-  if(ax==1)
+  if(ax == 1)
     gfun$segments(x, a, x, b, lwd=lwd, xpd=frac < 0, col=col)
   else
     gfun$segments(a, x, b, x, lwd=lwd, xpd=frac < 0, col=col)
@@ -223,8 +222,8 @@ datadensity.data.frame <-
   mxlb <-  .1 + max(strwidth(nams, units='inches', cex=cex.var))
   mai[2] <- mxlb
   if(!show.na) maxna <- 0
-  max.digits.na <- if(maxna==0) 0
-                   else trunc(log10(maxna))+1
+  max.digits.na <- if(maxna == 0) 0
+                   else trunc(log10(maxna)) + 1
 
   if(maxna > 0)
     mai[4] <- .1 + strwidth('Missing', units='inches', cex=cex.var)
@@ -277,7 +276,7 @@ datadensity.data.frame <-
               range(x, na.rm=TRUE)
           
           p <- pretty(r,
-                      if(nint==1)5
+                      if(nint == 1)5
                       else nint)
           
           if(nint < 2)
@@ -297,7 +296,7 @@ datadensity.data.frame <-
                    minf=.075, frac=sc(.02,.005), ...)
           else for(g in 1:ngroup)
             {
-              j <- group==levels(group)[g]
+              j <- group == levels(group)[g]
               scat1d((x[j]-xmin)/(xmax-xmin), y=y, bottom.align=bottom.align,
                      col=col.group[g], tfrac=if(N<125) 1 else max(.1, 125/N), 
                      minf=.075, frac=sc(.02,.005), ...)
@@ -342,10 +341,10 @@ datadensity.data.frame <-
           
           lines(c(0,1), c(y,y))
           maxfreq <- max(tab)
-          for(g in if(ngroup==0) 1 else 1 : ngroup)
+          for(g in if(ngroup == 0) 1 else 1 : ngroup)
             {
               tabg <- tab[g,]
-              if(method.cat=='bar')
+              if(method.cat == 'bar')
                 symbols(xx, y + .4 * tabg / maxfreq / 2, add=TRUE,
                         rectangles=cbind(.02, .4 * tabg / maxfreq),
                         inches=FALSE,
@@ -374,18 +373,18 @@ histSpike <-
            type=c('proportion','count','density'),
            xlim=range(x),
            ylim=c(0,max(f)), xlab=deparse(substitute(x)), 
-           ylab=switch(type,proportion='Proportion',
+           ylab=switch(type, proportion='Proportion',
              count     ='Frequency',
              density   ='Density'),
            y=NULL, curve=NULL, add=FALSE, 
-           bottom.align=type=='density', 
+           bottom.align=type == 'density', 
            col=par('col'), lwd=par('lwd'), grid=FALSE, ...)
 {
   type <- match.arg(type)
   if(! add && side != 1)
     stop('side must be 1 if add=FALSE')
 
-  if(add && type=='count')
+  if(add && type == 'count')
     warning('type="count" is ignored if add=TRUE')
 
   if(length(y) > 1) {
@@ -395,7 +394,7 @@ histSpike <-
     if(length(curve))
       warning('curve ignored when y specified')
     
-    i <- !is.na(x+y)
+    i <- !is.na(x + y)
     curve <- list(x=x[i], y=y[i])
   }
   
@@ -422,7 +421,7 @@ histSpike <-
       f <- f[j]
     }
     
-    if(type=='proportion') f <- f / sum(f)
+    if(type == 'proportion') f <- f / sum(f)
   } else {
     nbar <- logb(length(x), base = 2) + 1
     width <- diff(range(x)) / nbar * .75 * mult.width
@@ -438,7 +437,7 @@ histSpike <-
     plot(0, 0, xlim=xlim, ylim=ylim, xlab=xlab, ylab=ylab, type='n')
   }
   
-  if(side==1 || side==3) {
+  if(side == 1 || side == 3) {
     l <- 1:2;
     ax <- 1
   } else {
@@ -460,8 +459,8 @@ histSpike <-
   h <- min(pin) * frac / uin[- ax] * f
   h2 <- h / 2
   if(length(y) && inherits(y, 'unit')) {
-    h  <- unit(frac,   'npc')
-    h2 <- unit(frac/2, 'npc')
+    h  <- unit(frac,     'npc')
+    h2 <- unit(frac / 2, 'npc')
   }
   if(length(curve) || length(y)) {
     if(length(curve))
@@ -476,30 +475,232 @@ histSpike <-
     else u.opp[2]
   }
   
-  if(ax==1 && bottom.align && type!='density') {
+  if(ax == 1 && bottom.align && type != 'density') {
     a <- a + h2
     b <- b + h2
   }
   
-  if(type=='density') {
+  if(type == 'density') {
     lll <- gfun$lines
     ## Problem in S+ getting right value of lwd
-    if(ax==1)
+    if(ax == 1)
       do.call('lll',list(x,
-                         if(side==1)b
+                         if(side == 1)b
                          else a,
                          lwd=lwd,  col=col))
     else
-      do.call('lll',list(if(side==2)b
+      do.call('lll',list(if(side == 2)b
       else a,
                          x, lwd=lwd, col=col))
   } else {
     lll <- gfun$segments
-    if(ax==1)
-      do.call('lll',list(x, a, x, b, lwd=lwd, xpd=frac<0, col=col))
+    if(ax == 1)
+      do.call('lll',list(x, a, x, b, lwd=lwd, xpd=frac < 0, col=col))
     else
-      do.call('lll',list(a, x, b, x, lwd=lwd, xpd=frac<0, col=col))
+      do.call('lll',list(a, x, b, x, lwd=lwd, xpd=frac < 0, col=col))
   }
   
   invisible(xlim)
+}
+
+if(FALSE)
+  histSpikep <- function(p, x, y, z, group=NULL, color=NULL, hovertext=NULL,
+                       colors=NULL,
+                       bottom.align=TRUE, tracename='Proportion', ...) {
+
+  d <- data.frame(x=rep(x, each=3),
+                  y=rep(y, each=3),
+                  z=rep(z, each=3))
+  origcolor <- color
+
+  if(length(group))     d$group     <- rep(group,     each=3)
+  if(length(hovertext)) d$hovertext <- rep(hovertext, each=3)
+  if(length(color))     d$color     <- rep(color,     each=3)
+  
+  n <- nrow(d)
+  j <- seq(1, n, by=3)
+  if(length(hovertext)) d$hovertext[j] <- ''
+  if(! bottom.align)    d$y[j] <- d$y[j] - d$z[j] / 2
+  
+  j <- seq(3, n, by=3)
+  d$x[j] <- NA
+  if(length(hovertext)) d$hovertext[j] <- ''
+  
+  j <- seq(2, n, by=3)
+  d$y[j] <- d$y[j] + d$z[j] / ifelse(bottom.align, 1, 2)
+
+  plotly::plot_ly(d, x=~ x, y=~ y, mode='lines', type='scatter',
+#                  color=d$color,# colors=colors,
+                  line=list(color=d$color, width=1.4),  # ...
+                  text=~ hovertext,
+                  hoverinfo=if(length(hovertext)) 'text' else 'none')
+
+#  plotly::add_trace(p, data=d, x=x, y=y, mode='lines',
+#                    color=color, colors=colors,
+#                    line=list(..., width=1.4),
+#                    text=hovertext,
+#                    hoverinfo=if(length(hovertext)) 'text' else 'none',
+#                    evaluate=TRUE, name=tracename)
+}
+
+histboxp <- function(p=plotly::plot_ly(height=height),
+                     x, group=NULL, xlab=NULL,
+                     gmd=TRUE, sd=FALSE, bins=100) {
+
+  if(! length(xlab)) xlab <- label(x, html=TRUE, plot=TRUE,
+                                   default=deparse(substitute(x)))
+
+  if(! length(group)) group <- rep(1, length(x))
+  if(length(x) != length(group)) stop('x and group must be same length')
+
+  distinct <- unique(x)
+  distinct <- distinct[! is.na(distinct)]
+  xmin     <- min(distinct)
+  xr       <- x
+
+  ## Still do slight rounding if < bins distinct values because
+  ## values extremely close to each other won't show otherwise
+  if(length(distinct) > bins ||
+     min(diff(sort(distinct))) < range(distinct) / (5 * bins)) {
+    pret <- pretty(x, if(length(distinct) > bins) bins else 5 * bins)
+    dist <- pret[2] - pret[1]
+    r    <- range(pret)
+    xr   <- r[1] + dist * round((x - r[1]) / dist)
+  }
+
+  mu <- markupSpecs$html
+  
+  y <- 0
+  dh <- dm <- dq1 <- dq2 <- dq3 <- dgmd <- dsd <- levs <- NULL
+
+  group <- as.factor(group)
+  mis   <- is.na(x)
+  for(g in levels(group)) {
+    i <- group == g
+    miss <- sum(mis[i])
+    if(miss > 0) i <- i & ! mis
+    if(! any(i)) next
+    levs <- c(levs, g)
+    u     <- x[i]
+    ur    <- xr[i]
+    tab   <- as.data.frame(table(ur))
+    z     <- as.numeric(as.character(tab$ur))
+    prop  <- tab$Freq / length(ur)
+    y <- y - 1
+    dh <- rbind(dh, data.frame(x=z, prop=prop, freq=tab$Freq,
+                      txt=paste0(format(z), '<br>', round(prop, 3),
+                                 '<br>n=', tab$Freq),
+                      y=y))
+
+    dm <- rbind(dm, data.frame(Mean=mean(u), n=length(u), miss=miss, y=y))
+
+    if(gmd) {
+      Gmd <- GiniMd(u)
+      dgmd <- rbind(dgmd, data.frame(Gmd, x=xmin,
+                                     txt=paste0('Gini mean difference:',
+                                                format(Gmd, digits=5)),
+                                     y=y))
+    }
+
+    if(sd) {
+      Sd  <- sd(u)
+      dsd <- rbind(dsd, data.frame(sd=Sd, x=xmin,
+                                   txt=paste0('SD:', format(Sd, digits=5)),
+                                   y=y))
+      }
+
+    probs <- c(0.05, 0.25, 0.5, 0.75, 0.95)
+    qu  <- quantile(u, probs)
+    nam <- paste0('Q', mu$sub(probs))
+    txt <- paste0(nam, ':', format(qu, digits=5))
+    dq1 <- rbind(dq1, data.frame(Median=qu[3], txt=txt[3], y=y))
+    dq2 <- rbind(dq2, data.frame(quartiles=qu[c(2,4)], txt=txt[c(2,4)], y=y))
+    dq3 <- rbind(dq3, data.frame(outer=qu[c(1,5)], txt=txt[c(1,5)], y=y))
+  }
+
+  ng <- length(levs)
+  height <- plotlyParm$heightDotchart(ng) + 50 * (gmd & sd)
+
+  dh$prop <- 0.8 * dh$prop / max(dh$prop)
+  p <- plotly::add_segments(p, data=dh,
+                            x = ~ x,
+                            y = ~ y,
+                            xend = ~ x,
+                            yend = ~ y + prop,
+                            text = ~ txt,
+                            hoverinfo = 'text',
+                            color = I('black'),
+                            name  = 'Histogram')
+
+  dm$txt <- with(dm, paste0('Mean:', format(Mean, digits=5), '<br>n=', n,
+                            '<br>', miss, ' missing'))
+
+  yoff <- 0.09
+
+  p <- plotly::add_markers(p, data=dm, mode='markers', color=I('black'),
+                           x = ~ Mean, y = ~ y - yoff,
+                           text = ~ txt,
+                           hoverinfo = 'text',
+                           name = 'Mean')
+
+  p <- plotly::add_markers(p, mode='markers', data=dq1,
+                           x = ~ Median,
+                           y = ~ y - yoff,
+                           text = ~ txt,
+                           hoverinfo = 'text',
+                           marker = list(symbol='line-ns-open',
+                                         color='black', size=8),
+                           name = 'Median')
+  
+  p <- plotly::add_markers(p, mode='markers', data=dq2,
+                           x = ~ quartiles,
+                           y = ~ y - yoff,
+                           text = ~ txt,
+                           hoverinfo = 'text',
+                           marker = list(symbol='line-ns-open',
+                                         color='blue', size=6),
+                           name = 'Quartiles')
+  
+  p <- plotly::add_markers(p, mode='markers', data=dq3,
+                           x = ~ outer,
+                           y = ~ y - yoff,
+                           text = ~ txt,
+                           hoverinfo = 'text',
+                           marker = list(symbol='line-ns-open',
+                                         color='red', size=4),
+                           name = '0.05, 0.95<br>Quantiles')
+
+  if(gmd)
+    p <- plotly::add_segments(p, data=dgmd,
+                              x = ~ x,
+                              y = ~ y - 0.19,
+                              xend = ~ x + Gmd,
+                              yend = ~ y - 0.19,
+                              text = ~ txt,
+                              hoverinfo = 'text',
+                              color = I('light gray'),
+                              name = paste0('Gini ',
+                                       mu$overbar(paste0('|',
+                                                    htmlGreek('Delta'), '|'))),
+                              visible='legendonly')
+                              
+  if(sd)
+    p <- plotly::add_segments(p, data=dsd,
+                              x = ~ x,
+                              y = ~ y - 0.23,
+                              xend = ~ x + sd,
+                              yend = ~ y - 0.23,
+                              text = ~ txt,
+                              hoverinfo = 'text',
+                              color = I('light blue'),
+                              name = 'SD',
+                              visible='legendonly')
+
+  p <- plotly::layout(p,
+                      margin = list(l=plotlyParm$lrmargin(levs)),
+                      xaxis = list(title=xlab, zeroline=FALSE),
+                      yaxis = list(title='',
+                                   tickvals= - (1 : ng),
+                                   ticktext = levs))
+  p
 }

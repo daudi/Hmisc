@@ -45,8 +45,8 @@ transcan <-
   if(imputed.actual!='none')
     imputed <- TRUE
 
-  if(impcat=='multinom') require(nnet)
-  if(impcat=='rpart') require(rpart)
+#  if(impcat=='multinom') require(nnet)
+#  if(impcat=='rpart') require(rpart)
 
   if(missing(data))
     stop('Must specify data= when using R')
@@ -401,7 +401,8 @@ transcan <-
             uvals <- unPaste(vals, ';')
             names(tab) <- NULL
             Trantab[[i]] <- 
-              list(x=uvals[[1]], y=uvals[[2]], frequency=tab)
+              list(x=as.numeric(uvals[[1]]), y=as.numeric(uvals[[2]]),
+                   frequency=unname(tab))
             NULL
           }
 
@@ -485,8 +486,8 @@ transcan <-
               Imputed[[i]] <- pred
               NULL
             } else {
-              if(n.impute==0) {
-                if(usefill>0)
+              if(n.impute == 0) {
+                if(usefill > 0)
                   Im <- rep(fillin[i], sum(j))
                 else
                   Im <- invertTabulated(x[!j,i], newy[!j], aty=newy[j],
@@ -757,192 +758,176 @@ impute.transcan <-
            pos.in, data, list.out=FALSE,
            pr=TRUE, check=TRUE, ...)
 {
-  if(!missing(imputation) && length(imputation)>1)
+  if(!missing(imputation) && length(imputation) > 1)
     stop('imputation must be a single number')
   
   ## Check for old style
   imp <- if(is.list(x)) x$imputed
          else attr(x, 'imputed')
   
-  if(!length(imp))
-    { 
-      if(missing(var) && missing(name)) 
-        stop('imputed=TRUE was not specified to transcan')
+  if(!length(imp)) { 
+    if(missing(var) && missing(name)) 
+      stop('imputed=TRUE was not specified to transcan')
     
-      warning("imputed was not specified to transcan")
-      return(if(!missing(var))var)
+    warning("imputed was not specified to transcan")
+    return(if(! missing(var)) var)
+  }
+
+  if(missing(var) && missing(name)) {
+    nams   <- names(imp)
+    if(list.out) {
+      outlist <- vector('list', length(nams))
+      names(outlist) <- nams
     }
+    if(missing(data)) {
+      if(missing(pos.in))
+        pos.in <- find(nams[1])[1]
 
-  if(missing(var) && missing(name))
-    {
-      nams   <- names(imp)
-      if(list.out)
-        {
-          outlist <- vector('list', length(nams))
-          names(outlist) <- nams
-        }
-      if(missing(data))
-        {
-          if(missing(pos.in))
-            pos.in <- find(nams[1])[1]
-
-          var1   <- get(nams[1], pos=pos.in)
-        }
-      else
-        {
-          if(any(ni <- nams %nin% names(data)))
-            stop(paste('variable',paste(nams[ni],collapse=','),
-                       'not in data'))
-          var1 <- data[[nams[1]]]
-        }
-
-      namvar <- names(var1)
-      if(!length(namvar) && !missing(data))
-        namvar <- row.names(data)
-
-      if(check && length(namvar)==0)
-        warning(paste('variable',nams[1],
-                      'does not have a names() attribute\nand data does not have row.names. Assuming row names are integers.'))
-
-      nimp <- integer(length(nams))
-      names(nimp) <- nams
+      var1   <- get(nams[1], pos=pos.in)
+    }
+    else {
+      if(any(ni <- nams %nin% names(data)))
+        stop(paste('variable', paste(nams[ni],collapse=','),
+                   'not in data'))
+      var1 <- data[[nams[1]]]
+    }
     
-      for(nam in nams)
-        {
-          i <- imp[[nam]]
-          if(!length(i))
-            {
-              if(list.out) outlist[[nam]] <-
-                if(missing(data)) get(nam, pos=pos.in) else data[[nam]]
+    namvar <- names(var1)
+    if(! length(namvar) && ! missing(data))
+      namvar <- row.names(data)
+    
+    if(check && length(namvar)==0)
+      warning(paste('variable', nams[1],
+                    'does not have a names() attribute\nand data does not have row.names. Assuming row names are integers.'))
+    
+    nimp <- integer(length(nams))
+    names(nimp) <- nams
+    
+    for(nam in nams) {
+      i <- imp[[nam]]
+      if(!length(i)) {
+        if(list.out) outlist[[nam]] <-
+          if(missing(data)) get(nam, pos=pos.in) else data[[nam]]
+        
+        next
+      }
+      
+      d <- dim(i)
+      obsImputed <- if(length(d)) dimnames(i)[[1]] else names(i)
+      ## i[,imputation] drops names if only one obs. imputed
+      if(!missing(imputation)) {
+        if(!length(d)) 
+          stop('imputation can only be given when transcan used n.impute')
               
-              next
-            }
+        if(imputation < 1 || imputation > d[2])
+          stop(paste('imputation must be between 1 and',d[2]))
 
-          d <- dim(i)
-          obsImputed <- if(length(d)) dimnames(i)[[1]] else names(i)
-          ## i[,imputation] drops names if only one obs. imputed
-          if(!missing(imputation))
-            {
-              if(!length(d)) 
-                stop('imputation can only be given when transcan used n.impute')
-              
-              if(imputation < 1 || imputation > d[2])
-                stop(paste('imputation must be between 1 and',d[2]))
+        i <- i[, imputation]
+      }
+      else if(length(d)) 
+        stop('imputation must be specified when transcan used n.impute')
 
-              i <- i[,imputation]
-            }
-          else if(length(d)) 
-            stop('imputation must be specified when transcan used n.impute')
-
-          v <- if(missing(data)) get(nam, pos=pos.in)
-          else data[[nam]]
+      v <- if(missing(data)) get(nam, pos=pos.in)
+           else data[[nam]]
 
       ## Below was names(i) instead of match(...)
-          if(length(namvar))
-            {
-              sub <- match(obsImputed, namvar, nomatch=0)
-              i <- i[sub > 0]
-              sub <- sub[sub > 0]
-            }
-          else
-            {
-              if(!all.is.numeric(obsImputed))
-                stop(paste('names attribute of ',nam,
-                           ' is not all numeric\n',
-                           'and original observations did not have names',sep=''))
-
-              sub <- as.integer(obsImputed)
-            }
-          if(check)
-            if((missing(imputation) || imputation==1) &&
-               !all(is.na(v[sub])))
-              stop(paste('variable',nam,
-                         'does not have same missing values as were present when transcan was run'))
-          v[sub] <- if(is.factor(v)) levels(v)[as.integer(i)] else i
-          ## Note: if v was empty before, new v would have arbitrary length
-          ## Avoid problem by requiring all variables to be in data
-          attr(v,'imputed') <- sub
-          attr(v,'class') <- c('impute', attr(v,'class'))
-          
-          nimp[nam] <- length(i)
-          if(list.out)
-            outlist[[nam]] <- v
-        }
-
-    if(pr)
-      {
-        cat('\n\nImputed missing values with the following frequencies\n',
-            'and stored them in variables with their original names:\n\n')
-        print(nimp[nimp>0])
+      if(length(namvar)) {
+        sub <- match(obsImputed, namvar, nomatch=0)
+        i <- i[sub > 0]
+        sub <- sub[sub > 0]
       }
-
-    if(list.out)
-      {
-        z <- sapply(outlist,length)
-        if(diff(range(z)) > 0) {
-          cat('\n\nLengths of variable vectors:\n\n')
-          print(z)
-          stop('inconsistant naming of observations led to differing length vectors')
-        }
-        return(outlist)
+      else {
+        if(! all.is.numeric(obsImputed))
+          stop(paste('names attribute of ',nam,
+                     ' is not all numeric\n',
+                     'and original observations did not have names',sep=''))
+        
+        sub <- as.integer(obsImputed)
       }
-    
-      return(invisible(nimp))
+      if(check)
+        if((missing(imputation) || imputation == 1) &&
+           ! all(is.na(v[sub])))
+          stop(paste('variable',nam,
+                     'does not have same missing values as were present when transcan was run'))
+      v[sub] <- if(is.factor(v)) levels(v)[as.integer(i)] else i
+      ## Note: if v was empty before, new v would have arbitrary length
+      ## Avoid problem by requiring all variables to be in data
+      attr(v,'imputed') <- sub
+      attr(v,'class') <- c('impute', attr(v,'class'))
+      
+      nimp[nam] <- length(i)
+      if(list.out)
+        outlist[[nam]] <- v
     }
+    
+    if(pr) {
+      cat('\n\nImputed missing values with the following frequencies\n',
+          'and stored them in variables with their original names:\n\n')
+      print(nimp[nimp > 0])
+    }
+    
+    if(list.out) {
+      z <- sapply(outlist, length)
+      if(diff(range(z)) > 0) {
+        cat('\n\nLengths of variable vectors:\n\n')
+        print(z)
+        stop('inconsistant naming of observations led to differing length vectors')
+      }
+      return(outlist)
+    }
+    
+    return(invisible(nimp))
+  }
   
   impval <- imp[[name]]
   if(name %nin% names(imp))
     warning(paste('Variable',name,
                   'was not specified to transcan or had no NAs'))
-
+  
   if(!length(impval)) return(var)
   
   d <- dim(impval)
-
-  if(!missing(imputation))
-    {
-      if(!length(d)) 
-        stop('imputation can only be given when transcan used n.impute')
-
-      if(imputation < 1 || imputation > d[2])
-        stop(paste('imputation must be between 1 and',d[2]))
-
-      impval <- impval[,imputation]
-    }
+  
+  if(!missing(imputation)) {
+    if(!length(d)) 
+      stop('imputation can only be given when transcan used n.impute')
+    
+    if(imputation < 1 || imputation > d[2])
+      stop(paste('imputation must be between 1 and',d[2]))
+    
+    impval <- impval[,imputation]
+  }
   else if(length(d)) 
     stop('imputation must be specified when transcan used n.impute')
-
+  
   namvar <- names(var)
   
-  if(!length(namvar))
-    {
-      if(missing(data))
-        stop(paste('variable',name,
-                   'does not have a names() attribute\nand data= was not given.\nAssuming identifiers stored by transcan are integer subscripts'))
-      else
-        namvar <- row.names(data)
-      
-      if(!length(namvar))
-        stop(paste('variable',name,
-                   'does not have a names() attribute\nand data has no row.names'))
-    }
+  if(!length(namvar)) {
+    if(missing(data))
+      stop(paste('variable',name,
+                 'does not have a names() attribute\nand data= was not given.\nAssuming identifiers stored by transcan are integer subscripts'))
+    else
+      namvar <- row.names(data)
+    
+    if(!length(namvar))
+      stop(paste('variable',name,
+                 'does not have a names() attribute\nand data has no row.names'))
+  }
   
-  if(length(namvar))
-    {
-      sub <- match(names(impval), namvar, nomatch=0)
-      impval <- impval[sub > 0]
-      sub <- sub[sub > 0]
-    }
-  else
-    {
-      if(!all.is.numeric(names(impval)))
-        stop(paste('names attribute of ',name,
-                   ' is not all numeric\n',
-                   'and original observations did not have names',sep=''))
-      
-      sub <- as.integer(names(impval))
-    }
-
+  if(length(namvar)) {
+    sub <- match(names(impval), namvar, nomatch=0)
+    impval <- impval[sub > 0]
+    sub <- sub[sub > 0]
+  }
+  else {
+    if(!all.is.numeric(names(impval)))
+      stop(paste('names attribute of ',name,
+                 ' is not all numeric\n',
+                 'and original observations did not have names',sep=''))
+    
+    sub <- as.integer(names(impval))
+  }
+  
   ##Now take into account fact that transcan may have been
   ##run on a superset of current data frame
   
@@ -951,14 +936,14 @@ impute.transcan <-
     if(missing(imputation) || imputation==1)
       if(m!=sum(is.na(var)))
         warning("number of NAs in var != number of imputed values from transcan.")
-
-  if(m==0)
+  
+  if(m == 0)
     return(var)
   var[sub] <- if(is.factor(var)) levels(var)[as.integer(impval)]
-  else impval
-
-  attr(var,'imputed') <- sub
-  attr(var,'class') <- c("impute", attr(var,'class'))
+              else impval
+  
+  attr(var, 'imputed') <- sub
+  attr(var, 'class') <- c("impute", attr(var,'class'))
   var
 }
 
@@ -1233,6 +1218,7 @@ plot.transcan <- function(x, ...)
 
   trantab <- x$trantab
   imputed <- x$imputed
+  n.impute <- x$n.impute
   if(length(trantab)==0)
     stop('you did not specify trantab=TRUE to transcan()')
 
@@ -1247,7 +1233,7 @@ plot.transcan <- function(x, ...)
         m <- imputed[[w]]
         if(L <- length(m))
           {
-            title(sub=paste(L,'missing'),cex=.4,adj=1)
+            title(sub=paste(L / n.impute, 'missing'),cex=.4,adj=1)
             m.trans <- approx(z, xout=m, rule=2)$y
             scat1d(m, 3, ...)
             scat1d(m.trans, 4, ...)
@@ -1256,192 +1242,54 @@ plot.transcan <- function(x, ...)
   }
 }
 
-
-fit.mult.impute <- function(formula, fitter, xtrans, data,
-                            n.impute=xtrans$n.impute, fit.reps=FALSE,
-                            dtrans, derived,
-                            vcovOpts=NULL,
-                            pr=TRUE, subset, ...)
+ggplot.transcan <- function(data, mapping, scale=FALSE, ..., environment)
 {
-  using.Design <- FALSE
-  fits <- if(fit.reps) vector('list', n.impute)
-  used.mice <- any(class(xtrans)=='mids')
-  if(used.mice && missing(n.impute)) n.impute <- xtrans$m
-  stats.ok2average <- c('linear.predictors','fitted.values','stats', 'means',
-                        'icoef', 'scale', 'center', 'y.imputed')
-  
-  for(i in 1:n.impute) {
-    if(used.mice) completed.data <- complete(xtrans, i)
-    else {
-      completed.data <- data
-      imputed.data <-
-        impute.transcan(xtrans, imputation=i, data=data,
-                        list.out=TRUE, pr=FALSE, check=FALSE)
-      ## impute.transcan works for aregImpute
-      completed.data[names(imputed.data)] <- imputed.data
+  x <- data
+  trantab  <- x$trantab
+  imputed  <- x$imputed
+  n.impute <- max(1, x$n.impute)
+  rsq      <- x$rsq
+  if(length(trantab) == 0)
+    stop('you did not specify trantab=TRUE to transcan()')
+
+  p   <- length(trantab)
+  nam <- names(trantab)
+  data <- adata <- NULL
+  for(w in nam) {
+    z <- trantab[[w]]
+    x <- z[[1]]
+    y <- z[[2]]
+    if(scale) {
+      r <- range(y)
+      y <- (y - r[1]) / (r[2] - r[1])
+      z <- list(x=x, y=y)
     }
-
-    if(!missing(dtrans)) completed.data <- dtrans(completed.data)
-
-    if(!missing(derived)) {
-      stop('derived variables in fit.mult.imputed not yet implemented')
-      eval(derived, completed.data)
-    }
-
-    if(using.Design) options(Design.attr=da)
-    f <- if(missing(subset)) fitter(formula, data=completed.data, ...)
-    else fitter(formula, data=completed.data[subset,], ...)
-    
-    ## For some reason passing subset= causes model.frame bomb in R
-    if(fit.reps) fits[[i]] <- f
-
-    cof <- f$coef
-    v <- do.call('vcov', c(list(object=f, intercepts='all'), vcovOpts))
-
-    if(i == 1) {
-      if(inherits(f, 'orm'))
-        warning('When using fit.mult.impute with orm, there should not be any missing\nY values because different imputations will result in differing numbers\nof intercepts')
-      assign <- f$assign
-      ns     <- num.intercepts(f)
-      ik <- coef.intercepts <- NULL
-      if(ns > 0) {
-        ik <- attr(v, 'intercepts')  # intercepts kept in f$var
-        if(length(ik)) {
-          if(ik == 'all') ik <- 1 : ns else if(ik == 'none') ik <- 0
-          lenik <- length(ik); if(length(ik) == 1 && ik == 0) lenik <- 0
-          ## Shift parameter indexes to left b/c of omitted intercepts for orm
-          if(lenik != ns) {
-            for(j in 1:length(assign))
-              assign[[j]] <- assign[[j]] - (ns - lenik)
-            coef.intercepts <- ik
-          }
-        }
+    data  <- rbind(data, data.frame(type='transform', X=w, x=x, y=y))
+    loc   <- largest.empty(x, y, xlim=range(x), ylim=range(y))
+    lab   <- paste('R^2==', round(rsq[w], 2), sep='')
+    if(length(imputed)) {
+      m <- as.vector(imputed[[w]])
+      if(L <- length(m)) {
+        lab <- paste('paste(', lab, ',"   ',
+                     L / n.impute, ' missing")', sep='')
+        m.trans <- approx(z, xout=m, rule=2)$y
+        data <- rbind(data,
+                      data.frame(type='imputed', X=w, x=m, y=m.trans))
       }
-    }
-    if(length(ik)) cof <- c(cof[ik], cof[-(1:ns)])
-    
-    ## From Rainer Dyckerhoff to work correctly with models that have
-    ## a scale parameter (e.g. psm).  Check whether length of the
-    ## coefficient vector is different from the the number of rows of
-    ## the covariance matrix. If so, the model contains scale
-    ## parameters that are not fixed at some value and we have to 
-    ## append the scale parameters to the coefficient vector.
-    nvar0 <- length(cof)
-    nvar <- nrow(v)
-    if(nvar > nvar0) {
-      cof <- c(cof, log(f$scale))
-      names(cof) <- c(names(f$coef),
-                      if((nvar - nvar0) == 1) "Log(scale)"
-                      else names(f$scale))
-    }
-    
-    if(i==1) {
-      vavg <- 0*v
-      p <- length(cof)
-      bar <- rep(0, p)
-      vname <- names(cof)
-      cov <- matrix(0, nrow=p, ncol=p, dimnames=list(vname,vname))
-      
-      astats <- NULL
-      fitcomp <- names(f)[names(f) %in% stats.ok2average]
-      if(length(fitcomp)) for(ncomp in fitcomp)
-        astats[[ncomp]] <- f[[ncomp]]
-      
-      if(inherits(f,'Design') | inherits(f, 'rms')) {
-        using.Design <- TRUE
-        da <- f$Design
-      }
-	}
-
-    vavg <- vavg + v
-    bar <- bar + cof
-    cof <- as.matrix(cof)
-    cov <- cov + cof %*% t(cof)
-    
-    if(i > 1 && length(fitcomp))
-      for(ncomp in fitcomp)
-        astats[[ncomp]] <- astats[[ncomp]] + f[[ncomp]]
-  }
-  
-  vavg <- vavg / n.impute    ## matrix \bar{U} in Rubin's notation
-  bar <- bar/n.impute
-  bar <- as.matrix(bar)
-  ## Matrix B in Rubin's notation:
-  cov <- (cov - n.impute * bar %*% t(bar))/(n.impute-1)
-  U <- diag(vavg);
-  B <- diag(cov)  ## save the diagonals of U and B
-
-  cov <- vavg + (n.impute+1)/n.impute * cov  ## final covariance matrix
-
-  r <- diag(cov) / diag(vavg)
-  names(r) <- vname
-  tau  <- (1 + 1/n.impute)*B/U
-  missingInfo <- tau/(1+tau)
-  dfmi <- (n.impute-1)*((1 + 1/tau)^2)
-
-  if(length(fitcomp))
-    for(ncomp in fitcomp)
-      f[[ncomp]] <- astats[[ncomp]] / n.impute
-
-  if(pr) {
-    cat('\nVariance Inflation Factors Due to Imputation:\n\n')
-    print(round(r,2))
-    cat('\nRate of Missing Information:\n\n')
-    print(round(missingInfo,2))
-    cat('\nd.f. for t-distribution for Tests of Single Coefficients:\n\n')
-    print(round(dfmi,2))
-    if(length(fitcomp)) {
-      cat('\nThe following fit components were averaged over the',
-          n.impute, 'model fits:\n\n')
-      cat(' ', fitcomp, '\n\n')
+      adata <- rbind(adata, data.frame(X=w, x=loc$x, y=loc$y,
+                                       lab=lab, type='transform'))
     }
   }
-  
-  f$coefficients <- drop(bar)
-  if(length(coef.intercepts))
-    attr(f$coefficients, 'intercepts') <- coef.intercepts
-  attr(cov, 'intercepts') <- ik
-  f$var <- cov
-  f$variance.inflation.impute <- r
-  f$missingInfo <- missingInfo
-  f$dfmi    <- dfmi
-  f$fits    <- fits
-  f$formula <- formula
-  f$assign  <- assign
-  if(using.Design) options(Design.attr=NULL)
-  class(f) <- c('fit.mult.impute', class(f))
-  f
+  ggplot(data, aes(x=x, y=y, color=type, shape=type, size=type)) + geom_point() +
+       facet_wrap(~ X, scales=if(scale) 'free_x' else 'free', ...) +
+       xlab(NULL) + ylab('Transformed') +
+       scale_color_manual(values=c('#00000059', '#FF000059')) +
+       scale_shape_manual(values=c(1, 3)) +
+       scale_size_manual(values=c(1.3, 2.25)) +
+       theme(legend.position='none') +
+       geom_text(data=adata, aes(label=lab), parse=TRUE, size=1.65, col='black')
 }
 
-
-vcov.fit.mult.impute <-
-  function(object, regcoef.only=TRUE, intercepts='mid', ...) {
-    ns    <- num.intercepts(object)
-    v     <- object$var
-    if(ns == 0) return(v)
-    vari  <- attr(v, 'intercepts')
-    lvari <- length(vari)
-    if(is.character(intercepts)) {
-      switch(intercepts,
-             mid = {
-               if(lvari > 0L && lvari != 1L)
-                 stop('requested middle intercept but more than one intercept stored in object$var')
-               return(v) },
-             all = {
-               if(lvari > 0 && lvari < ns)
-                 stop('requested all intercepts but not all stored in object$var')
-               return(v) },
-             none = if(inherits(object, 'orm') && lvari == 1)
-              return(v[-1, -1, drop=FALSE]) else
-              return(v[-(1:ns),-(1:ns), drop=FALSE]))
-    }
-    ## intercepts is integer scalar or vector
-    if(lvari && isTRUE(all.equal(sort(vari), sort(intercepts)))) return(v)
-    if(length(intercepts) == ns) return(v)
-    if(length(intercepts) >  ns) stop('more intercepts requested than in model')
-    i  <- c(intercepts, (ns + 1) : ncol(v))
-    v[i, i, drop=FALSE]
-}
 
 
 ##The following needed if Design is not in effect, to make anova work
@@ -1601,3 +1449,4 @@ rMultinom <- function(probs, m)
   
   ran
 }
+utils::globalVariables('type')

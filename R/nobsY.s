@@ -27,6 +27,10 @@ nobsY <- function(formula, group=NULL,
   wid <- sr$id
   if(length(wid)) {
     xid <- X[[wid - ncol(Y)]]
+    if(length(wid) > 1) {
+      xid$sep <- '.'
+      xid <- do.call('paste', xid)
+    }
     ## Remove id() from formula
     forig <- as.character(forig)
     if(ncol(X) == 1)  ## id() is the only right-hand term
@@ -35,14 +39,15 @@ nobsY <- function(formula, group=NULL,
       forig[3] <- sub(' \\+ id(.*)', '', forig[3])
       forig <- as.formula(paste(forig[2], forig[3], sep=' ~ '))
     }
-  }
-  xid  <- if(! length(wid)) 1 : nrow(Y) else X[[wid - ncol(Y)]]
+  } else xid <- 1 : nrow(Y)
+  idv <- xid
+
   group <- if(length(group) && group %in% names(X)) X[[group]]
   if(marg) {
     xm <- X$.marginal.
-    if(length(group)) group <- group[! xm]
-    Y   <- Y  [! xm,, drop=FALSE]
-    xid <- xid[! xm]
+    if(length(group)) group <- group[xm == '']
+    Y   <- Y  [xm == '',, drop=FALSE]
+    xid <- xid[xm == '']
   }
   nY   <- ncol(Y)
   nobs <- rep(NA, nY)
@@ -67,29 +72,52 @@ nobsY <- function(formula, group=NULL,
       nobsg[, i] <- tapply(xid[notna], group[notna],
                            function(x) length(unique(x)))
   }
-  structure(list(nobs=nobs, nobsg=nobsg, formula=forig))
+  structure(list(nobs=nobs, nobsg=nobsg, id=idv, formula=forig))
 }
 
-addMarginal <- function(data, ..., label='All') {
+addMarginal <- function(data, ..., label='All',
+                        margloc=c('last', 'first'), nested) {
+  nested <- as.character(substitute(nested))
+  if(length(nested) && nested == '') nested <- NULL
   vars <- as.character(sys.call())[- (1 : 2)]
   vars <- intersect(vars, names(data))
-  data$.marginal. <- FALSE
+  data$.marginal. <- ''
+  margloc <- match.arg(margloc)
+  if(length(nested) && (nested %nin% names(data)))
+    stop(paste('Variable', nested, 'is not in data'))
 
   labs <- sapply(data, function(x) {
     la <- attr(x, 'label')
     if(! length(la)) la <- ''
-    la })
+    la
+  } )
+  
   un <- sapply(data, function(x) {
     u <- attr(x, 'units')
     if(! length(u)) u <- ''
-    u })
+    u
+  } )
 
-  for(v in vars) {
+  levs <- vector('list', length(vars))
+  names(levs) <- vars
+  for(v in setdiff(vars, nested)) {
     d <- data
-    d$.marginal. <- TRUE
+    d$.marginal. <- ifelse(d$.marginal. == '', v,
+                           paste(d$.marginal., v, sep=','))
+    levs[[v]] <- levels(as.factor(d[[v]]))
+    levs[[v]] <- if(margloc == 'last') c(levs[[v]], label)
+                 else                  c(label,     levs[[v]])
     d[[v]] <- label
-    data <- rbind(data, d)
+    if(length(nested)) {
+      levs[[nested]] <- levels(as.factor(d[[nested]]))
+      levs[[nested]] <- if(margloc == 'last') c(levs[[nested]], label)
+                        else                  c(label,          levs[[nested]])
+      d[[nested]] <- label
+      }
+    data <- if(margloc == 'last') rbind(data, d) else rbind(d, data)
   }
+  for(v in vars) data[[v]] <- factor(data[[v]], levs[[v]])
+  
   ## Restore any Hmisc attributes
   if(any(labs != '') || any(un != ''))
     for(i in 1 : length(data)) {

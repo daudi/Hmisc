@@ -2,33 +2,35 @@ wtd.mean <- function(x, weights=NULL, normwt='ignored', na.rm=TRUE)
 {
   if(!length(weights)) return(mean(x, na.rm=na.rm))
   if(na.rm) {
-    s <- !is.na(x + weights)
+    s <- ! is.na(x + weights)
     x <- x[s]
     weights <- weights[s]
   }
 
-  sum(weights*x)/sum(weights)
+  sum(weights * x) / sum(weights)
 }
 
 
-wtd.var <- function(x, weights=NULL, normwt=FALSE, na.rm=TRUE)
+
+wtd.var <- function(x, weights=NULL, normwt=FALSE, na.rm=TRUE,
+                    method = c('unbiased', 'ML'))
 {
-  if(!length(weights)) {
-    if(na.rm) x <- x[!is.na(x)]
+  method <- match.arg(method)
+  if(! length(weights)) {
+    if(na.rm) x <- x[! is.na(x)]
     return(var(x))
   }
 
   if(na.rm) {
-    s <- !is.na(x + weights)
-    x <- x[s]
+    s       <- ! is.na(x + weights)
+    x       <- x[s]
     weights <- weights[s]
   }
 
   if(normwt)
-    weights <- weights*length(x)/sum(weights)
+    weights <- weights * length(x) / sum(weights)
 
-  xbar <- sum(weights*x)/sum(weights)
-  sum(weights*((x - xbar)^2)) / (sum(weights) - 1)
+  as.numeric(stats::cov.wt(cbind(x), weights, method = method)$cov)
 }
 
 
@@ -36,7 +38,7 @@ wtd.quantile <- function(x, weights=NULL, probs=c(0, .25, .5, .75, 1),
                          type=c('quantile','(i-1)/(n-1)','i/(n+1)','i/n'), 
                          normwt=FALSE, na.rm=TRUE)
 {
-  if(!length(weights))
+  if(! length(weights))
     return(quantile(x, probs=probs, na.rm=na.rm))
 
   type <- match.arg(type)
@@ -81,9 +83,10 @@ wtd.Ecdf <- function(x, weights=NULL,
          'i/(n+1)'    ={a <- 0; b <- 1},
          'i/n'        ={a <- b <- 0})
 
-  if(!length(weights)) {
-    ##.Options$digits <- 7  ## to get good resolution for names(table(x))6Aug00
-    oldopt <- options(digits=7)
+  if(! length(weights)) {
+    ##.Options$digits <- 7  ## to get good resolution for names(table(x))
+    oldopt <- options('digits')
+    options(digits=7)
     on.exit(options(oldopt))
     cumu <- table(x)    ## R does not give names for cumsum
     isdate <- testDateTime(x)  ## 31aug02
@@ -112,7 +115,7 @@ wtd.table <- function(x, weights=NULL, type=c('list','table'),
                       normwt=FALSE, na.rm=TRUE)
 {
   type <- match.arg(type)
-  if(!length(weights))
+  if(! length(weights))
     weights <- rep(1, length(x))
 
   isdate <- testDateTime(x)  ## 31aug02 + next 2
@@ -124,7 +127,7 @@ wtd.table <- function(x, weights=NULL, type=c('list','table'),
   x <- unclass(x)
   
   if(na.rm) {
-    s <- !is.na(x + weights)
+    s <- ! is.na(x + weights)
     x <- x[s, drop=FALSE]    ## drop is for factor class
     weights <- weights[s]
   }
@@ -136,13 +139,13 @@ wtd.table <- function(x, weights=NULL, type=c('list','table'),
   i <- order(x)  # R does not preserve levels here
   x <- x[i]; weights <- weights[i]
 
-  if(any(diff(x) == 0)) {  ## slightly faster than any(duplicated(xo))
+  if(anyDuplicated(x)) {  ## diff(x) == 0 faster but doesn't handle Inf
     weights <- tapply(weights, x, sum)
     if(length(lev)) {
       levused <- lev[sort(unique(x))]
       if((length(weights) > length(levused)) &&
          any(is.na(weights)))
-        weights <- weights[!is.na(weights)]
+        weights <- weights[! is.na(weights)]
 
       if(length(weights) != length(levused))
         stop('program logic error')
@@ -150,7 +153,7 @@ wtd.table <- function(x, weights=NULL, type=c('list','table'),
       names(weights) <- levused
     }
 
-    if(!length(names(weights)))
+    if(! length(names(weights)))
       stop('program logic error')
 
     if(type=='table')
@@ -182,8 +185,8 @@ wtd.table <- function(x, weights=NULL, type=c('list','table'),
 
 wtd.rank <- function(x, weights=NULL, normwt=FALSE, na.rm=TRUE)
 {
-  if(!length(weights))
-    return(rank(x),na.last=if(na.rm)NA else TRUE)
+  if(! length(weights))
+    return(rank(x, na.last=if(na.rm) NA else TRUE))
 
   tab <- wtd.table(x, weights, normwt=normwt, na.rm=na.rm)
   
@@ -203,7 +206,7 @@ wtd.loess.noiter <- function(x, y, weights=rep(1,n),
   type <- match.arg(type)
   n <- length(y)
   if(na.rm) {
-    s <- !is.na(x+y+weights)
+    s <- ! is.na(x + y + weights)
     x <- x[s]; y <- y[s]; weights <- weights[s]; n <- length(y)
   }
   
@@ -231,7 +234,7 @@ num.denom.setup <- function(num, denom)
   if(length(denom) != n)
     stop('lengths of num and denom must match')
   
-  s <- (1:n)[!is.na(num + denom) & denom != 0]
+  s <- (1:n)[! is.na(num + denom) & denom != 0]
   num <- num[s];
   denom <- denom[s]
   

@@ -4,7 +4,7 @@
 \alias{aregTran}
 \alias{as.double.Cbind}
 \alias{as.numeric.Cbind}
-\alias{format.sep}
+\alias{formatSep}
 \alias{as.data.frame.impute}
 \alias{as.data.frame.roundN}
 \alias{as.data.frame.special.miss}
@@ -25,6 +25,9 @@
 \alias{ftupwr}
 \alias{get2rowHeads}
 \alias{groupn}
+\alias{htmlGreek}
+\alias{htmlSpecial}
+\alias{markupSpecs}
 \alias{importConvertDateTime}
 \alias{is.present}
 \alias{lookupSASContents}
@@ -44,6 +47,7 @@
 \alias{ordGridFun}
 \alias{parGrid}
 \alias{pasteFit}
+\alias{plotpsummaryM}
 \alias{print.substi}
 \alias{print.timePOSIXt}
 \alias{read.xportDataload}
@@ -51,9 +55,9 @@
 \alias{rowsumFast}
 \alias{sas.get.macro}
 \alias{setParNro}
+\alias{StatPlsmo}
 \alias{stepfun.eval}
 \alias{stripChart}
-\alias{[.terms}
 \alias{termsDrop}
 \alias{testDateTime}
 \alias{uncbind}
@@ -67,6 +71,18 @@
 \alias{responseSummary}
 \alias{combine}
 \alias{combine<-}
+\alias{F_cidxcn}
+\alias{F_cidxcp}
+\alias{F_do_mchoice_match}
+\alias{F_do_nstr}
+\alias{F_hoeffd}
+\alias{F_jacklins}
+\alias{F_largrec}
+\alias{F_maxempr}
+\alias{F_rcorr}
+\alias{F_wclosepw}
+\alias{F_wclosest}
+
 \description{Internal Hmisc functions.}
 \details{These are not to be called by the user or are undocumented.}
 \keyword{internal}

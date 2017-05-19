@@ -10,14 +10,16 @@ not set, the current working directory is used.
 }
 \usage{
 # options(LoadPath='mypath')
-Save(object, name=deparse(substitute(object)))
+Save(object, name=deparse(substitute(object)), compress=TRUE)
 Load(object)
 }
 \arguments{
   \item{object}{the name of an object, usually a data frame.  It must
 	not be quoted.}
   \item{name}{an optional name to assign to the object and file name
-	prefix, if the argument name is not used}
+		prefix, if the argument name is not used}
+	\item{compress}{see \code{\link{save}}.  Default is \code{TRUE}
+		which corresponds to \code{gzip}.}
 }
 \details{
 \code{Save} creates a temporary version of the object under the name
@@ -25,8 +27,7 @@ given by the user, so that \code{save} will internalize this name.
 Then subsequent \code{Load} or \code{load} will cause an object of the
 original name to be created in the global environment.  The name of
 the \R data file is assumed to be the name of the object (or the value
-of \code{name}) appended with \code{".rda"}.  For \code{Save},
-compression is used.
+of \code{name}) appended with \code{".rda"}.
 }
 \author{Frank Harrell}
 \seealso{\code{\link{save}}, \code{\link{load}}}
